@@ -31,7 +31,11 @@ Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
 
 ## Install & configure
 
-Requires Node 18+. The MCP host runs the server over **stdio**.
+Requires Node 18+. The MCP host runs the server over **stdio**. Install straight from GitHub — **no npm account, no signup** (the built `dist/` is committed):
+
+```bash
+npx -y github:CHANGCHINFU/mcp-gauge
+```
 
 ### Claude Desktop
 
@@ -42,7 +46,7 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
   "mcpServers": {
     "gauge": {
       "command": "npx",
-      "args": ["-y", "mcp-gauge-x402"],
+      "args": ["-y", "github:CHANGCHINFU/mcp-gauge"],
       "env": {
         "EVM_PRIVATE_KEY": "0xYOUR_BASE_WALLET_KEY_WITH_A_LITTLE_USDC"
       }
@@ -53,17 +57,20 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
 
 Omit `EVM_PRIVATE_KEY` to use **free tools only** (catalog / preview / sample / river).
 
-### Cursor / other MCP hosts
+### Cursor / other MCP hosts / Claude Code
 
-Same idea — command `npx -y mcp-gauge-x402`, transport stdio, optional `EVM_PRIVATE_KEY` env.
+- **Claude Code**: `claude mcp add gauge -- npx -y github:CHANGCHINFU/mcp-gauge` (add `--env EVM_PRIVATE_KEY=0x…` for paid tools).
+- **Cursor / others**: command `npx -y github:CHANGCHINFU/mcp-gauge`, transport stdio, optional `EVM_PRIVATE_KEY` env.
 
 ### From source
 
 ```bash
-npm install
-npm run build
+git clone https://github.com/CHANGCHINFU/mcp-gauge && cd mcp-gauge
+npm install && npm run build
 node dist/index.js        # stdio
 ```
+
+> Once published to npm the package name is `mcp-gauge-x402` (`npx -y mcp-gauge-x402`); until then use the GitHub form above.
 
 ## Config (env)
 
@@ -79,14 +86,15 @@ node dist/index.js        # stdio
 
 Every paid record carries `record_hash` (canonical sha256) + Merkle root + OpenTimestamps (Bitcoin). Re-check via `POST /verify` or `/proof/:record_hash` at the GAUGE service.
 
-## Publish to the MCP Registry (maintainers)
+## Distribution (maintainers)
 
-`server.json` is included. Publish with the [MCP publisher](https://github.com/modelcontextprotocol/registry):
-
-```bash
-npm publish                     # publish the npm package first
-mcp-publisher login github      # auth as the repo owner
-mcp-publisher publish           # submits server.json to registry.modelcontextprotocol.io
-```
+- **GitHub install** (primary, no npm account): users run `npx -y github:CHANGCHINFU/mcp-gauge`.
+- **awesome-mcp-servers**: submit a PR to a curated MCP server list for discoverability (no npm needed).
+- **MCP Registry** (optional, needs npm): publish `mcp-gauge-x402` to npm, then `server.json` is ready for the [MCP publisher](https://github.com/modelcontextprotocol/registry):
+  ```bash
+  npm publish
+  mcp-publisher login github
+  mcp-publisher publish
+  ```
 
 MIT · AEML-DS Vanished-Data Exchange
