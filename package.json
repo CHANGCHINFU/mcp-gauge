@@ -1,0 +1,55 @@
+{
+  "name": "mcp-gauge",
+  "version": "0.1.0",
+  "description": "MCP server for GAUGE — verifiable environmental, agriculture, power-grid, shipping & regulatory-filing signals for AI agents. Free discovery tools; paid decision-grade records pay-per-call in USDC on Base via x402 (no API key). Official sources (USGS/NOAA/EPA/ERA5/FRED/Marine/SEC-EDGAR) + record_hash provenance.",
+  "type": "module",
+  "bin": {
+    "mcp-gauge": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "server.json"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "dev": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "viem": "^2.21.0",
+    "x402-fetch": "^0.4.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "x402",
+    "usdc",
+    "base",
+    "ai-agent",
+    "pay-per-call",
+    "verifiable-data",
+    "flood-risk",
+    "drought",
+    "air-quality",
+    "power-grid",
+    "energy-inflation",
+    "shipping",
+    "port-congestion",
+    "sec-edgar",
+    "insider-trading",
+    "corporate-distress",
+    "record-hash",
+    "opentimestamps"
+  ],
+  "license": "MIT",
+  "author": "AEML-DS Vanished-Data Exchange"
+}

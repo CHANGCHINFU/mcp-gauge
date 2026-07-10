@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.CHANGCHINFU/mcp-gauge",
+  "description": "Verifiable environmental, agriculture, power-grid, shipping & regulatory-filing signals for AI agents — pay-per-call in USDC on Base via x402 (no API key). Official sources + record_hash provenance.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/CHANGCHINFU/mcp-gauge",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "mcp-gauge",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "EVM_PRIVATE_KEY", "description": "0x Base-mainnet wallet key with a little USDC — required only for PAID tools (x402, gasless). Free tools work without it.", "isSecret": true, "isRequired": false },
+        { "name": "GAUGE_BASE_URL", "description": "GAUGE service base URL (default https://aeml-x402.zeabur.app)", "isRequired": false },
+        { "name": "GAUGE_MAX_USDC", "description": "Atomic per-call spend cap (default 120000 = $0.12)", "isRequired": false }
+      ]
+    }
+  ]
+}
