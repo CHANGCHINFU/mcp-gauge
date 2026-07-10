@@ -10,7 +10,7 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "mcp-gauge",
+      "identifier": "mcp-gauge-x402",
       "version": "0.1.0",
       "transport": { "type": "stdio" },
       "environmentVariables": [

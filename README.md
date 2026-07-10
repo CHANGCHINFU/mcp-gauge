@@ -42,7 +42,7 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
   "mcpServers": {
     "gauge": {
       "command": "npx",
-      "args": ["-y", "mcp-gauge"],
+      "args": ["-y", "mcp-gauge-x402"],
       "env": {
         "EVM_PRIVATE_KEY": "0xYOUR_BASE_WALLET_KEY_WITH_A_LITTLE_USDC"
       }
@@ -55,7 +55,7 @@ Omit `EVM_PRIVATE_KEY` to use **free tools only** (catalog / preview / sample / 
 
 ### Cursor / other MCP hosts
 
-Same idea — command `npx -y mcp-gauge`, transport stdio, optional `EVM_PRIVATE_KEY` env.
+Same idea — command `npx -y mcp-gauge-x402`, transport stdio, optional `EVM_PRIVATE_KEY` env.
 
 ### From source
 
