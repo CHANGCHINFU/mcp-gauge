@@ -1,7 +1,7 @@
 {
   "name": "mcp-gauge-x402",
   "version": "0.1.0",
-  "description": "MCP server for GAUGE — verifiable environmental, agriculture, power-grid, shipping & regulatory-filing signals for AI agents. Free discovery tools; paid decision-grade records pay-per-call in USDC on Base via x402 (no API key). Official sources (USGS/NOAA/EPA/ERA5/FRED/Marine/SEC-EDGAR) + record_hash provenance.",
+  "description": "MCP server for GAUGE — verifiable environmental, agriculture, power-grid, shipping & regulatory-filing signals for AI agents. Free discovery tools; paid screening-level records pay-per-call in USDC on Base via x402 (no API key). Official sources (USGS/NOAA/EPA/ERA5/FRED/Marine/SEC-EDGAR) + record_hash provenance.",
   "type": "module",
   "bin": {
     "mcp-gauge-x402": "dist/index.js"

@@ -1,5 +1,9 @@
 # mcp-gauge — MCP server for GAUGE (verifiable signals, pay-per-call in USDC via x402)
 
+[![MCP server score](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge/badges/score.svg)](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-server-blue)](https://modelcontextprotocol.io)
+
 Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across five domains — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
 
 **Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash` (OpenTimestamps, Bitcoin-anchored). The agent decides. Payment settles **directly to the provider wallet**.
