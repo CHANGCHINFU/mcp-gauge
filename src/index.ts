@@ -2,7 +2,7 @@
  * mcp-gauge — Model Context Protocol server for GAUGE.
  *
  * Exposes GAUGE's verifiable, pay-per-call signals to any MCP host (Claude Desktop, Cursor,
- * MCP-compatible agents). Free discovery tools need no wallet; paid decision-grade tools pay
+ * MCP-compatible agents). Free discovery tools need no wallet; paid screening-level tools pay
  * per call in USDC on Base via x402 (EIP-3009 gasless, no API key). Pure description: official
  * sources (USGS/NOAA/EPA/CAMS/ERA5/FRED/Marine/SEC-EDGAR) + back-testable stats + record_hash.
  *
