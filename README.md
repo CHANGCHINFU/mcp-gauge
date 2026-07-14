@@ -4,11 +4,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-server-blue)](https://modelcontextprotocol.io)
 
-Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across five domains — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
+Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across many domains (weather, drought, agriculture, power grid, shipping, regulatory filings, and more) — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
 
 **Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash` (OpenTimestamps, Bitcoin-anchored). The agent decides. Payment settles **directly to the provider wallet**.
 
 Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
+
+> **Part of Truth Bear 🐻** — GAUGE is the data engine behind [Truth Bear](https://gauge-frontdesk.zeabur.app), the natural-language front desk for AI agents and SMBs. Ask in plain language, get the official fact + its source + a verifiable `record_hash` — no prediction, no advice, the rest is your call. *An analyst, not a commander.* Front desk: **https://gauge-frontdesk.zeabur.app** · discovery: `/.well-known/x402`, `/llms.txt`.
 
 ## Why MCP + x402
 
@@ -31,7 +33,7 @@ Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
 | `gauge_route_disruption` | **$0.10** | Shipping triangle: route disruption + sea state + AIS throughput |
 | `gauge_filing_check` | **$0.10** | Regulatory-filing triangle: 8-K + late filing + Form 4 insider |
 
-**19 signals** across hydrology, air quality, precipitation, agriculture, power grid, shipping, regulatory filing.
+**130+ signals (and growing)** across hydrology, air quality, precipitation, agriculture, power grid, shipping and regulatory filing — with **global coverage** (US plus Argentina, Brazil, China, India, Ukraine, EU and more). Check the live set anytime via the free `gauge_catalog` tool.
 
 ## Install & configure
 
