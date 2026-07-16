@@ -149,6 +149,79 @@ server.registerTool("gauge_filing_check", {
     return fail(e);
   }
 });
+server.registerTool("gauge_stablecoin_lifecycle", {
+  title: "Stablecoin lifecycle triangle: peg-distress & redemption flight ($0.10)",
+  description: "Verifiable stablecoin lifecycle record for one issuer: peg-distress band (current price vs the $1 anchor \u2014 distance-to-action) + redemption-flight pressure (supply/reserve/outflow dynamics) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where a stablecoin sits in its lifecycle \u2014 not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. terrausd-ust, usdc-circle, usdt.",
+  inputSchema: { entity: z.string().describe("stablecoin id, e.g. terrausd-ust, usdc-circle, usdt (see gauge_catalog)") }
+}, async ({ entity }) => {
+  try {
+    return ok(await paidGet(`/gauge/stablecoin-region?entity=${q(entity)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
+server.registerTool("gauge_rwa_lifecycle", {
+  title: "Tokenized RWA lifecycle triangle: redemption pressure & exposure cascade ($0.10)",
+  description: "Verifiable tokenized real-world-asset (RWA) issuer lifecycle record: issuer lifecycle band + redemption pressure (NAV vs on-chain supply, outflow) + exposure cascade to downstream holders/protocols + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a tokenized-asset issuer's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. blackrock-buidl, ondo-ousg.",
+  inputSchema: { entity: z.string().describe("RWA issuer id, e.g. blackrock-buidl, ondo-ousg (see gauge_catalog)") }
+}, async ({ entity }) => {
+  try {
+    return ok(await paidGet(`/gauge/rwa-region?entity=${q(entity)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
+server.registerTool("gauge_lrt_lifecycle", {
+  title: "Liquid-restaking (LRT) lifecycle triangle: redemption queue & collateral cascade ($0.10)",
+  description: "Verifiable liquid-restaking-token (LRT) lifecycle record: lifecycle band anchored to ETH-NAV (NOT $1) + redemption-queue pressure (withdrawal backlog, discount-to-NAV) + collateral cascade to protocols using the LRT as collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where an LRT sits in its lifecycle \u2014 not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. etherfi-weeth, renzo-ezeth.",
+  inputSchema: { entity: z.string().describe("LRT id, e.g. etherfi-weeth, renzo-ezeth (see gauge_catalog)") }
+}, async ({ entity }) => {
+  try {
+    return ok(await paidGet(`/gauge/lrt-region?entity=${q(entity)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
+server.registerTool("gauge_defi_lending", {
+  title: "DeFi lending protocol lifecycle triangle: bad-debt stress & contagion ($0.10)",
+  description: "Verifiable DeFi lending-protocol lifecycle record: protocol lifecycle band + bad-debt stress (utilization, insolvency/underwater-position pressure) + contagion cascade to correlated protocols and collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a lending protocol's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity = protocol id (see gauge_catalog).",
+  inputSchema: { entity: z.string().describe("DeFi lending protocol id (see gauge_catalog)") }
+}, async ({ entity }) => {
+  try {
+    return ok(await paidGet(`/gauge/defilending-region?entity=${q(entity)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
+server.registerTool("gauge_depin_network", {
+  title: "DePIN network lifecycle triangle: reward churn & downstream exposure ($0.10)",
+  description: "Verifiable DePIN (decentralized physical infrastructure) network lifecycle record: network-liveness lifecycle band (active nodes/coverage/throughput) + reward-churn pressure (emissions vs participation, node attrition) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a DePIN network's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. helium, render, filecoin.",
+  inputSchema: { entity: z.string().describe("DePIN network id, e.g. helium, render, filecoin (see gauge_catalog)") }
+}, async ({ entity }) => {
+  try {
+    return ok(await paidGet(`/gauge/depin-region?entity=${q(entity)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
+server.registerTool("gauge_resolution_as_of", {
+  title: "Proposer-feed resolution: official fact + evidence + source-agreement confidence ($0.01)",
+  description: "Resolves a prediction-market question to the OFFICIAL FACT for an issuer/form. Returns the official answer (boolean) + a verifiable evidence_url + source_tier + a source-AGREEMENT confidence in [0,1] + _citation. This is the recorded official fact and how strongly official sources agree on it \u2014 it is NOT a prediction of the market outcome, and the confidence is NOT a probability that the market resolves yes. Honest-fails with no charge ({ answer:null, confidence:0, no_charge:true, note }) when the fact is not officially determinable as of the cutoff. Screening-grade, official sources only. Costs $0.01 USDC on Base via x402 (no charge on honest-fail).",
+  inputSchema: {
+    issuer: z.string().describe("the entity/issuer the question is about (e.g. a ticker or issuer id)"),
+    form: z.string().optional().describe("the official form/event type to resolve against (e.g. a filing form), if applicable"),
+    as_of: z.string().optional().describe("optional cutoff timestamp \u2014 resolve the fact as known at this instant (ISO 8601)")
+  }
+}, async ({ issuer, form, as_of }) => {
+  try {
+    const params = [`issuer=${q(issuer)}`];
+    if (form) params.push(`form=${q(form)}`);
+    if (as_of) params.push(`as_of=${q(as_of)}`);
+    return ok(await paidGet(`/resolve/proposer?${params.join("&")}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
 var transport = new StdioServerTransport();
 await server.connect(transport);
 console.error("mcp-gauge running (stdio). Base=" + BASE + " wallet=" + (wallet() ? "set" : "unset \u2014 free tools only"));
