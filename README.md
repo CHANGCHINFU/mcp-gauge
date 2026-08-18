@@ -26,7 +26,8 @@ Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
 | `gauge_preview` | free | Coverage, pricing menu, bundle lists |
 | `gauge_sample` | free | A full sample record (what paid looks like) |
 | `gauge_river_free` | free | Raw US river reading (USGS site id) |
-| `gauge_flood_risk` | **$0.01** | Flood-risk/anomaly record vs official thresholds + seasonal anomaly + hash |
+| `verify_signal` | **$0.01** | **Start here.** Verify one official fact before your agent acts - reading vs the official threshold ladder + 5yr percentile + source URL + offline-recomputable record_hash. 180+ signals. |
+| `gauge_flood_risk` | **$0.01** | Hydrology/air/precip alias of `verify_signal` - same endpoint, same price |
 | `gauge_region` | **$0.25** | City bundle: air + precipitation + river + cross-check |
 | `gauge_crop_drought` | **$0.25** | Agriculture triangle: drought (USDM) + heat/GDD + crop VHI |
 | `gauge_grid_stress` | **$0.25** | Power grid triangle: demand + renewables + energy inflation |
