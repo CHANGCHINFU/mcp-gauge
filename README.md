@@ -3,11 +3,10 @@
 [![MCP server score](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge/badges/score.svg)](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-server-blue)](https://modelcontextprotocol.io)
-[![smithery badge](https://smithery.ai/badge/truthbear/mcp-gauge)](https://smithery.ai/servers/truthbear/mcp-gauge)
 
 Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across many domains (weather, drought, agriculture, power grid, shipping, regulatory filings, and more) — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
 
-**Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash` (canonical sha256, recomputable offline). The agent decides. Payment settles **directly to the provider wallet**.
+**Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash` (OpenTimestamps, Bitcoin-anchored). The agent decides. Payment settles **directly to the provider wallet**.
 
 Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
 
@@ -27,25 +26,22 @@ Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
 | `gauge_preview` | free | Coverage, pricing menu, bundle lists |
 | `gauge_sample` | free | A full sample record (what paid looks like) |
 | `gauge_river_free` | free | Raw US river reading (USGS site id) |
-| `gauge_flood_risk` | **$0.05** | Flood-risk/anomaly record vs official thresholds + seasonal anomaly + hash |
-| `gauge_region` | **$0.10** | City bundle: air + precipitation + river + cross-check |
-| `gauge_crop_drought` | **$0.10** | Agriculture triangle: drought (USDM) + heat/GDD + crop VHI |
-| `gauge_grid_stress` | **$0.10** | Power grid triangle: demand + renewables + energy inflation |
-| `gauge_route_disruption` | **$0.10** | Shipping triangle: route disruption + sea state + AIS throughput |
-| `gauge_filing_check` | **$0.10** | Regulatory-filing triangle: 8-K + late filing + Form 4 insider |
+| `gauge_flood_risk` | **$0.01** | Flood-risk/anomaly record vs official thresholds + seasonal anomaly + hash |
+| `gauge_region` | **$0.25** | City bundle: air + precipitation + river + cross-check |
+| `gauge_crop_drought` | **$0.25** | Agriculture triangle: drought (USDM) + heat/GDD + crop VHI |
+| `gauge_grid_stress` | **$0.25** | Power grid triangle: demand + renewables + energy inflation |
+| `gauge_route_disruption` | **$0.25** | Shipping triangle: route disruption + sea state + AIS throughput |
+| `gauge_filing_check` | **$0.25** | Regulatory-filing triangle: 8-K + late filing + Form 4 insider |
+| `gauge_stablecoin_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
+| `gauge_rwa_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
+| `gauge_lrt_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
+| `gauge_defi_lending` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
+| `gauge_depin_network` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
+| `gauge_resolution_as_of` | **$0.01** | see the tool description (regenerated from the live 402 quote) |
+
+Every figure above is regenerated from the live 402 quote. **The 402 challenge the endpoint returns is always authoritative.** If you drive the API with your own x402 client rather than this server, set its `maxValue` to at least **$0.25** — the common default of $0.10 makes your client reject the bundle tools locally, before the request is ever sent. `gauge_preview` returns the current menu for free.
 
 **130+ signals (and growing)** across hydrology, air quality, precipitation, agriculture, power grid, shipping and regulatory filing — with **global coverage** (US plus Argentina, Brazil, China, India, Ukraine, EU and more). Check the live set anytime via the free `gauge_catalog` tool.
-
-## Two ways to connect (they are different servers)
-
-| | This package (stdio) | Hosted remote (Smithery) |
-|---|---|---|
-| How | `npx -y github:CHANGCHINFU/mcp-gauge` | [smithery.ai/servers/truthbear/mcp-gauge](https://smithery.ai/servers/truthbear/mcp-gauge) |
-| Tools | the `gauge_*` tools (main ones in the table below) | 3 tools: `verify_citation`, `find_signal`, `get_official_record` |
-| Paid calls | this server pays for you, from `EVM_PRIVATE_KEY` | **never takes payment** — it hands you the real 402 challenge and you pay from your own wallet |
-| Needs a wallet key | yes, for paid tools | no |
-
-Pick the remote one if you don't want to put a private key in your MCP host config.
 
 ## Install & configure
 
@@ -102,15 +98,7 @@ node dist/index.js        # stdio
 
 ## Verify (zero-trust)
 
-Every paid record carries a `record_hash` — the canonical sha256 of the record's core fields, which you can
-recompute yourself offline. Re-check a record via `POST /verify`, or look a hash up with `GET /proof/:record_hash`
-or the free `GET /gauge/verify?format=json&hash=…`, at the GAUGE service.
-
-> **Bitcoin / OpenTimestamps anchoring: RETIRED.** It was ruled out of implementation on 2026-07-23 and was never
-> actually stamped. Earlier versions of this README advertised it — that was wrong, and this corrects it.
-> What you actually get: **integrity** from `record_hash`, and **timeliness** from the official `source_ref`
-> plus `observed_at`. The `ots_status` field is a legacy compatibility field and stays `pending` forever.
-> The live service says the same thing in `GET /proof/:record_hash` → `proof.bitcoin_anchoring`.
+Every paid record carries `record_hash` (canonical sha256) + Merkle root + OpenTimestamps (Bitcoin). Re-check via `POST /verify` or `/proof/:record_hash` at the GAUGE service.
 
 ## Distribution (maintainers)
 

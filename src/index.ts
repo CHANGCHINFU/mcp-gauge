@@ -9,7 +9,7 @@
  * Env:
  *   GAUGE_BASE_URL     default https://aeml-x402.zeabur.app
  *   EVM_PRIVATE_KEY    0x Base-mainnet key (needs a little USDC) — required only for PAID tools
- *   GAUGE_MAX_USDC     atomic per-call cap, default 120000 ($0.12)
+ *   GAUGE_MAX_USDC     atomic per-call cap, default 350000 ($0.35)
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -20,7 +20,34 @@ import { base } from "viem/chains";
 import { wrapFetchWithPayment } from "x402-fetch";
 
 const BASE = (process.env.GAUGE_BASE_URL || "https://aeml-x402.zeabur.app").replace(/\/$/, "");
-const MAX = BigInt(process.env.GAUGE_MAX_USDC || "120000"); // $0.12 hard cap (allows $0.10 bundles, blocks $1 census)
+// ★★2026-08-16 security review: the cap was $0.12 while 10 of the 12 paid tools call
+//   $0.25 endpoints. x402-fetch rejects locally when maxAmountRequired > maxValue, so those
+//   tools were DEAD ON ARRIVAL - the request never left the client, nothing reached our logs,
+//   and the agent just saw a generic failure. Our own 402 challenge literally warns about this:
+//   "above the x402 client default maxValue ... your own client rejects this payment locally".
+//   We shipped that warning for third parties and then configured our own client into it.
+//   $0.35 is the highest bundle price in the live catalog (plus /gauge/subscribe at $9.90,
+//   which no tool here calls), so 350000 covers every tool while still blocking a runaway.
+const MAX = BigInt(process.env.GAUGE_MAX_USDC || "350000"); // $0.35 per-call cap - covers every paid tool in the live catalog
+// Daily cumulative spend cap — defends against prompt-injection / runaway agent draining the wallet
+// via repeated paid calls (each ≤ MAX). In-memory (resets on restart / at UTC midnight); counts MAX per
+// paid call as a conservative upper bound. Raise GAUGE_DAILY_MAX_USDC to increase. Default $5/day.
+const DAILY_MAX = BigInt(process.env.GAUGE_DAILY_MAX_USDC || "5000000");
+let _spendDay = "";
+let _spentToday = 0n;
+function assertDailyCap() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== _spendDay) { _spendDay = today; _spentToday = 0n; }
+  if (_spentToday + MAX > DAILY_MAX) {
+    throw new Error(`GAUGE daily spend cap reached (${DAILY_MAX} atomic USDC/day). Blocks runaway/prompt-injection wallet drain. Raise GAUGE_DAILY_MAX_USDC or restart to reset.`);
+  }
+  // ★NOTE (2026-08-16): this charges the *worst case* (MAX) up front and never refunds, so a
+  //   $0.01 call, a failed call, and an honest no_charge:true miss all burn the full cap.
+  //   That contradicts the "no charge when nothing is found" promise at the budget layer.
+  //   Charging the settled amount instead needs the settlement response threaded back here;
+  //   left as-is for now rather than half-done, but it is a real over-count - see docs.
+  _spentToday += MAX;
+}
 
 function wallet() {
   let pk = process.env.EVM_PRIVATE_KEY || process.env.GAUGE_PRIVATE_KEY;
@@ -36,6 +63,7 @@ async function freeGet(path: string): Promise<any> {
 async function paidGet(path: string): Promise<any> {
   const w = wallet();
   if (!w) throw new Error("EVM_PRIVATE_KEY not set — paid GAUGE tools need a Base-mainnet wallet with a little USDC (x402, gasless, no API key). Set EVM_PRIVATE_KEY in this MCP server's env. Free tools (gauge_catalog/sample/preview/river_free) work without a wallet.");
+  assertDailyCap();   // daily cumulative spend cap - stops a prompt-injected or runaway agent from draining the wallet with repeated paid calls
   // cast: viem WalletClient signs EIP-3009 at runtime; x402-fetch's SignerWallet type is stricter across viem versions
   const payFetch = wrapFetchWithPayment(fetch, w as any, MAX);
   const r = await payFetch(BASE + path, { method: "GET" });
@@ -78,8 +106,8 @@ server.registerTool("gauge_river_free", {
 
 // ───────────────────────── PAID tools (x402, USDC on Base) ─────────────────────────
 server.registerTool("gauge_flood_risk", {
-  title: "Flood-risk / anomaly record ($0.05)",
-  description: "Verifiable flood-risk / anomaly record for one signal+entity: current vs official USGS/NOAA/EPA/CAMS thresholds (band, distance-to-action) + 5yr seasonal anomaly (percentile/strata) + record_hash. Costs $0.05 USDC on Base via x402. Works for hydrology/air/precip signals.",
+  title: "Flood-risk / anomaly record (see gauge_catalog for the live price)",
+  description: "Verifiable flood-risk / anomaly record for one signal+entity: current vs official USGS/NOAA/EPA/CAMS thresholds (band, distance-to-action) + 5yr seasonal anomaly (percentile/strata) + record_hash. Costs see gauge_catalog for the live price USDC on Base via x402. Works for hydrology/air/precip signals.",
   inputSchema: {
     signal_id: z.string().describe("e.g. hydrology.river-level, hydrology.streamflow, airquality.aqi, airquality.pm25, precipitation.daily, precipitation.wetness30d"),
     entity: z.string().describe("USGS site id for rivers, or city id (e.g. us-chicago) for air/precip — see gauge_catalog"),
@@ -87,63 +115,63 @@ server.registerTool("gauge_flood_risk", {
 }, async ({ signal_id, entity }) => { try { return ok(await paidGet(`/gauge?signal_id=${q(signal_id)}&entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_region", {
-  title: "Region bundle: air + rain + river ($0.10)",
-  description: "Three-leg region bundle for a US city: air quality + precipitation + nearby river, with cross-line corroboration narrative. Costs $0.10 USDC on Base. loc e.g. us-stlouis, us-chicago (see gauge_preview regions).",
+  title: "Region bundle: air + rain + river (see gauge_catalog for the live price)",
+  description: "Three-leg region bundle for a US city: air quality + precipitation + nearby river, with cross-line corroboration narrative. Costs see gauge_catalog for the live price USDC on Base. loc e.g. us-stlouis, us-chicago (see gauge_preview regions).",
   inputSchema: { loc: z.string().describe("city id, e.g. us-stlouis") },
 }, async ({ loc }) => { try { return ok(await paidGet(`/gauge/region?loc=${q(loc)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_crop_drought", {
-  title: "Agriculture triangle: crop drought ($0.10)",
-  description: "Agriculture triangle for a grain region: agricultural drought (soil moisture vs official USDM D0–D4) + heat/GDD + crop vegetation health (NOAA satellite VHI) + cross-validation (has drought hit the crop canopy). For ag traders & crop insurers. Costs $0.10 USDC on Base. loc e.g. us-iowa, ar-pampas, ua-ukraine.",
+  title: "Agriculture triangle: crop drought (see gauge_catalog for the live price)",
+  description: "Agriculture triangle for a grain region: agricultural drought (soil moisture vs official USDM D0–D4) + heat/GDD + crop vegetation health (NOAA satellite VHI) + cross-validation (has drought hit the crop canopy). For ag traders & crop insurers. Costs see gauge_catalog for the live price USDC on Base. loc e.g. us-iowa, ar-pampas, ua-ukraine.",
   inputSchema: { loc: z.string().describe("grain region id, e.g. us-iowa, ar-pampas, ua-ukraine") },
 }, async ({ loc }) => { try { return ok(await paidGet(`/gauge/agri-region?loc=${q(loc)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_grid_stress", {
-  title: "Power grid triangle: grid stress & energy inflation ($0.10)",
-  description: "Power grid triangle for a grid region: electricity demand pressure (temperature HDD/CDD load proxy) + renewable resource (solar/wind) + energy inflation (US CPI Energy YoY) / natural gas price + cross-validation (high demand × low renewables = grid squeeze → energy inflation). For power/energy & macro/inflation traders, utilities. Costs $0.10 USDC on Base. loc e.g. us-ercot, us-caiso, eu-germany.",
+  title: "Power grid triangle: grid stress & energy inflation (see gauge_catalog for the live price)",
+  description: "Power grid triangle for a grid region: electricity demand pressure (temperature HDD/CDD load proxy) + renewable resource (solar/wind) + energy inflation (US CPI Energy YoY) / natural gas price + cross-validation (high demand × low renewables = grid squeeze → energy inflation). For power/energy & macro/inflation traders, utilities. Costs see gauge_catalog for the live price USDC on Base. loc e.g. us-ercot, us-caiso, eu-germany.",
   inputSchema: { loc: z.string().describe("grid region id, e.g. us-ercot, us-caiso, eu-germany") },
 }, async ({ loc }) => { try { return ok(await paidGet(`/gauge/grid-region?loc=${q(loc)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_route_disruption", {
-  title: "Shipping triangle: route disruption & throughput ($0.10)",
-  description: "Shipping/port triangle for a chokepoint: logistics-flow disruption (WMO sea state + wind vs operational thresholds) + sea-state cause (wave decomposition: local-storm vs distant-swell) + live AIS vessel throughput (waiting vs transiting + congestion) + cross-validation. For shipping lines, commodity/freight traders, ports, marine insurers. Costs $0.10 USDC on Base. loc e.g. malacca, suez-redsea, hormuz, channel.",
+  title: "Shipping triangle: route disruption & throughput (see gauge_catalog for the live price)",
+  description: "Shipping/port triangle for a chokepoint: logistics-flow disruption (WMO sea state + wind vs operational thresholds) + sea-state cause (wave decomposition: local-storm vs distant-swell) + live AIS vessel throughput (waiting vs transiting + congestion) + cross-validation. For shipping lines, commodity/freight traders, ports, marine insurers. Costs see gauge_catalog for the live price USDC on Base. loc e.g. malacca, suez-redsea, hormuz, channel.",
   inputSchema: { loc: z.string().describe("chokepoint id, e.g. malacca, suez-redsea, hormuz, channel") },
 }, async ({ loc }) => { try { return ok(await paidGet(`/gauge/shipping-region?loc=${q(loc)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_filing_check", {
-  title: "Regulatory-filing triangle: corporate distress & insider ($0.10)",
-  description: "Regulatory-filing triangle for a company: 8-K material events (item severity — bankruptcy/default/restatement/delisting = critical) + NT late-filing delinquency (distress leading indicator) + Form 4 insider net open-market buy/sell + cross-validation (do insiders confirm the distress by selling or contradict it by buying). All official SEC EDGAR. For event-driven/activist/short funds, quant funds, credit & distressed analysts. Costs $0.10 USDC on Base. entity = ticker e.g. AMC, CVNA, GME.",
+  title: "Regulatory-filing triangle: corporate distress & insider (see gauge_catalog for the live price)",
+  description: "Regulatory-filing triangle for a company: 8-K material events (item severity — bankruptcy/default/restatement/delisting = critical) + NT late-filing delinquency (distress leading indicator) + Form 4 insider net open-market buy/sell + cross-validation (do insiders confirm the distress by selling or contradict it by buying). All official SEC EDGAR. For event-driven/activist/short funds, quant funds, credit & distressed analysts. Costs see gauge_catalog for the live price USDC on Base. entity = ticker e.g. AMC, CVNA, GME.",
   inputSchema: { entity: z.string().describe("ticker from watchlist, e.g. AMC, CVNA, GME, BA (see gauge_preview filing_watchlist)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/filing-company?entity=${q(entity.toUpperCase())}`)); } catch (e) { return fail(e); } });
 
 // ──────────── PAID tools — crypto / emerging-finance lifecycle (x402, USDC on Base) ────────────
 server.registerTool("gauge_stablecoin_lifecycle", {
-  title: "Stablecoin lifecycle triangle: peg-distress & redemption flight ($0.10)",
-  description: "Verifiable stablecoin lifecycle record for one issuer: peg-distress band (current price vs the $1 anchor — distance-to-action) + redemption-flight pressure (supply/reserve/outflow dynamics) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where a stablecoin sits in its lifecycle — not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. terrausd-ust, usdc-circle, usdt.",
+  title: "Stablecoin lifecycle triangle: peg-distress & redemption flight (see gauge_catalog for the live price)",
+  description: "Verifiable stablecoin lifecycle record for one issuer: peg-distress band (current price vs the $1 anchor — distance-to-action) + redemption-flight pressure (supply/reserve/outflow dynamics) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where a stablecoin sits in its lifecycle — not investment advice, no buy/sell framing. Costs see gauge_catalog for the live price USDC on Base via x402. entity e.g. terrausd-ust, usdc-circle, usdt.",
   inputSchema: { entity: z.string().describe("stablecoin id, e.g. terrausd-ust, usdc-circle, usdt (see gauge_catalog)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/stablecoin-region?entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_rwa_lifecycle", {
-  title: "Tokenized RWA lifecycle triangle: redemption pressure & exposure cascade ($0.10)",
-  description: "Verifiable tokenized real-world-asset (RWA) issuer lifecycle record: issuer lifecycle band + redemption pressure (NAV vs on-chain supply, outflow) + exposure cascade to downstream holders/protocols + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a tokenized-asset issuer's lifecycle position — not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. blackrock-buidl, ondo-ousg.",
+  title: "Tokenized RWA lifecycle triangle: redemption pressure & exposure cascade (see gauge_catalog for the live price)",
+  description: "Verifiable tokenized real-world-asset (RWA) issuer lifecycle record: issuer lifecycle band + redemption pressure (NAV vs on-chain supply, outflow) + exposure cascade to downstream holders/protocols + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a tokenized-asset issuer's lifecycle position — not investment advice, no buy/sell framing. Costs see gauge_catalog for the live price USDC on Base via x402. entity e.g. blackrock-buidl, ondo-ousg.",
   inputSchema: { entity: z.string().describe("RWA issuer id, e.g. blackrock-buidl, ondo-ousg (see gauge_catalog)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/rwa-region?entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_lrt_lifecycle", {
-  title: "Liquid-restaking (LRT) lifecycle triangle: redemption queue & collateral cascade ($0.10)",
-  description: "Verifiable liquid-restaking-token (LRT) lifecycle record: lifecycle band anchored to ETH-NAV (NOT $1) + redemption-queue pressure (withdrawal backlog, discount-to-NAV) + collateral cascade to protocols using the LRT as collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where an LRT sits in its lifecycle — not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. etherfi-weeth, renzo-ezeth.",
+  title: "Liquid-restaking (LRT) lifecycle triangle: redemption queue & collateral cascade (see gauge_catalog for the live price)",
+  description: "Verifiable liquid-restaking-token (LRT) lifecycle record: lifecycle band anchored to ETH-NAV (NOT $1) + redemption-queue pressure (withdrawal backlog, discount-to-NAV) + collateral cascade to protocols using the LRT as collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where an LRT sits in its lifecycle — not investment advice, no buy/sell framing. Costs see gauge_catalog for the live price USDC on Base via x402. entity e.g. etherfi-weeth, renzo-ezeth.",
   inputSchema: { entity: z.string().describe("LRT id, e.g. etherfi-weeth, renzo-ezeth (see gauge_catalog)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/lrt-region?entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_defi_lending", {
-  title: "DeFi lending protocol lifecycle triangle: bad-debt stress & contagion ($0.10)",
-  description: "Verifiable DeFi lending-protocol lifecycle record: protocol lifecycle band + bad-debt stress (utilization, insolvency/underwater-position pressure) + contagion cascade to correlated protocols and collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a lending protocol's lifecycle position — not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity = protocol id (see gauge_catalog).",
+  title: "DeFi lending protocol lifecycle triangle: bad-debt stress & contagion (see gauge_catalog for the live price)",
+  description: "Verifiable DeFi lending-protocol lifecycle record: protocol lifecycle band + bad-debt stress (utilization, insolvency/underwater-position pressure) + contagion cascade to correlated protocols and collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a lending protocol's lifecycle position — not investment advice, no buy/sell framing. Costs see gauge_catalog for the live price USDC on Base via x402. entity = protocol id (see gauge_catalog).",
   inputSchema: { entity: z.string().describe("DeFi lending protocol id (see gauge_catalog)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/defilending-region?entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
 server.registerTool("gauge_depin_network", {
-  title: "DePIN network lifecycle triangle: reward churn & downstream exposure ($0.10)",
-  description: "Verifiable DePIN (decentralized physical infrastructure) network lifecycle record: network-liveness lifecycle band (active nodes/coverage/throughput) + reward-churn pressure (emissions vs participation, node attrition) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a DePIN network's lifecycle position — not investment advice, no buy/sell framing. Costs $0.10 USDC on Base via x402. entity e.g. helium, render, filecoin.",
+  title: "DePIN network lifecycle triangle: reward churn & downstream exposure (see gauge_catalog for the live price)",
+  description: "Verifiable DePIN (decentralized physical infrastructure) network lifecycle record: network-liveness lifecycle band (active nodes/coverage/throughput) + reward-churn pressure (emissions vs participation, node attrition) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a DePIN network's lifecycle position — not investment advice, no buy/sell framing. Costs see gauge_catalog for the live price USDC on Base via x402. entity e.g. helium, render, filecoin.",
   inputSchema: { entity: z.string().describe("DePIN network id, e.g. helium, render, filecoin (see gauge_catalog)") },
 }, async ({ entity }) => { try { return ok(await paidGet(`/gauge/depin-region?entity=${q(entity)}`)); } catch (e) { return fail(e); } });
 
