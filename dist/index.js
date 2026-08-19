@@ -8,7 +8,7 @@ import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { wrapFetchWithPayment } from "x402-fetch";
-var BASE = (process.env.GAUGE_BASE_URL || "https://aeml-x402.zeabur.app").replace(/\/$/, "");
+var BASE = (process.env.GAUGE_BASE_URL || "https://api.truthbear.co").replace(/\/$/, "");
 var MAX = BigInt(process.env.GAUGE_MAX_USDC || "350000");
 var DAILY_MAX = BigInt(process.env.GAUGE_DAILY_MAX_USDC || "5000000");
 var _spendDay = "";

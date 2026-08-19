@@ -6,9 +6,10 @@
 
 Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across many domains (weather, drought, agriculture, power grid, shipping, regulatory filings, and more) — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
 
-**Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash` (OpenTimestamps, Bitcoin-anchored). The agent decides. Payment settles **directly to the provider wallet**.
+**Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash`, with daily Merkle roots stamped via OpenTimestamps to Bitcoin — the stamp proves the record set existed **no later than** its `stamped_at`; it is **not** evidence about the data day itself. The agent decides. Payment settles **directly to the provider wallet**.
 
-Backed by the GAUGE service at **https://aeml-x402.zeabur.app**.
+Backed by the GAUGE service at **https://api.truthbear.co**.
+(The service also still answers on its previous host `https://aeml-x402.zeabur.app`; `api.truthbear.co` is the canonical URL and is what every 402 challenge advertises as the resource.)
 
 > **Part of Truth Bear 🐻** — GAUGE is the data engine behind [Truth Bear](https://gauge-frontdesk.zeabur.app), the natural-language front desk for AI agents and SMBs. Ask in plain language, get the official fact + its source + a verifiable `record_hash` — no prediction, no advice, the rest is your call. *An analyst, not a commander.* Front desk: **https://gauge-frontdesk.zeabur.app** · discovery: `/.well-known/x402`, `/llms.txt`.
 
@@ -92,14 +93,14 @@ node dist/index.js        # stdio
 | Key | Required | Description |
 |---|---|---|
 | `EVM_PRIVATE_KEY` | for **paid** tools | 0x Base-mainnet wallet key; needs a little USDC (EIP-3009 gasless, no ETH). |
-| `GAUGE_BASE_URL` | no | Default `https://aeml-x402.zeabur.app`. |
+| `GAUGE_BASE_URL` | no | Default `https://api.truthbear.co`. |
 | `GAUGE_MAX_USDC` | no | Atomic per-call cap. Default `120000` ($0.12). |
 
 > Handle the private key like any hot-wallet secret; fund it with a small USDC balance only.
 
 ## Verify (zero-trust)
 
-Every paid record carries `record_hash` (canonical sha256) + Merkle root + OpenTimestamps (Bitcoin). Re-check via `POST /verify` or `/proof/:record_hash` at the GAUGE service.
+Every paid record carries `record_hash` (canonical sha256). Daily Merkle roots are stamped via OpenTimestamps to Bitcoin: **the stamp proves the record set existed no later than its `stamped_at` — it is NOT evidence about the data day itself.** Re-check via `POST /verify` or `/proof/:record_hash` at the GAUGE service; see `/gauge/anchor` for the day roots and attestation bytes (verify them with the official `ots` tool).
 
 ## Distribution (maintainers)
 

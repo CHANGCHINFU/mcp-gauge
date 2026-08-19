@@ -2,7 +2,7 @@
 
 Drop-in tools for agent frameworks. **Zero dependencies, zero API key, zero signup.**
 
-Everything here talks to the same GAUGE service at `https://aeml-x402.zeabur.app`
+Everything here talks to the same GAUGE service at `https://api.truthbear.co`
 that [mcp-gauge](../README.md) wraps — the free tier works immediately; paid
 endpoints answer `HTTP 402` with an [x402](https://x402.org) challenge that your
 own wallet settles. **These tools never touch your funds.**

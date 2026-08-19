@@ -24,7 +24,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = "https://aeml-x402.zeabur.app"
+BASE = "https://api.truthbear.co"
 TIMEOUT = 45
 
 DESCRIPTION = (

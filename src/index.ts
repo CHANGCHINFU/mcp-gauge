@@ -7,7 +7,7 @@
  * sources (USGS/NOAA/EPA/CAMS/ERA5/FRED/Marine/SEC-EDGAR) + back-testable stats + record_hash.
  *
  * Env:
- *   GAUGE_BASE_URL     default https://aeml-x402.zeabur.app
+ *   GAUGE_BASE_URL     default https://api.truthbear.co
  *   EVM_PRIVATE_KEY    0x Base-mainnet key (needs a little USDC) — required only for PAID tools
  *   GAUGE_MAX_USDC     atomic per-call cap, default 350000 ($0.35)
  */
@@ -19,7 +19,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { wrapFetchWithPayment } from "x402-fetch";
 
-const BASE = (process.env.GAUGE_BASE_URL || "https://aeml-x402.zeabur.app").replace(/\/$/, "");
+const BASE = (process.env.GAUGE_BASE_URL || "https://api.truthbear.co").replace(/\/$/, "");
 // ★★2026-08-16 security review: the cap was $0.12 while 10 of the 12 paid tools call
 //   $0.25 endpoints. x402-fetch rejects locally when maxAmountRequired > maxValue, so those
 //   tools were DEAD ON ARRIVAL - the request never left the client, nothing reached our logs,
