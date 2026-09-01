@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.CHANGCHINFU/mcp-gauge",
-  "description": "US government data (USGS/NOAA/SEC/FDA) with cryptographic proof; x402 pay-per-call, no API key",
-  "version": "1.0.1",
+  "description": "Verify official facts with Bitcoin-anchored proof. 180+ signals, x402 pay-per-call.",
+  "version": "1.0.5",
   "websiteUrl": "https://truthbear.co",
   "repository": {
     "url": "https://github.com/CHANGCHINFU/mcp-gauge",

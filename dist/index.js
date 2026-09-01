@@ -50,7 +50,7 @@ var fail = (e) => ({ content: [{ type: "text", text: "Error: " + (e?.message || 
 var server = new McpServer({ name: "gauge", version: "0.1.0" });
 server.registerTool("gauge_catalog", {
   title: "GAUGE catalog (free)",
-  description: "List all GAUGE signals \u2014 hydrology (river level/streamflow), air quality (AQI/PM2.5), precipitation/drought, agriculture (drought/heat/crop VHI), power grid (demand/renewables/energy inflation), shipping (route disruption/sea state/AIS throughput), regulatory filing (8-K/late filing/insider) \u2014 with the entities you can query. Free, no payment.",
+  description: "List all 180+ available signal_id + entity pairs across USGS, NOAA, EPA, CAMS, ERA5, FRED, SEC-EDGAR, and crypto. Use this first to discover what to query with verify_signal or the $0.25 bundles. Free.",
   inputSchema: {}
 }, async () => {
   try {
@@ -61,7 +61,7 @@ server.registerTool("gauge_catalog", {
 });
 server.registerTool("gauge_preview", {
   title: "GAUGE preview & pricing menu (free)",
-  description: "GAUGE coverage counts, \xE0-la-carte pricing menu, and the lists of region/company bundles (regions, agri_regions, grid_regions, shipping_regions, filing_watchlist). Use this to discover what to buy. Free.",
+  description: "Get pricing menu and available region/entity lists (regions, agri_regions, grid_regions, shipping_regions, filing_watchlist). Use to discover valid loc/entity values for the $0.25 bundle tools. Free.",
   inputSchema: {}
 }, async () => {
   try {
@@ -72,7 +72,7 @@ server.registerTool("gauge_preview", {
 });
 server.registerTool("gauge_sample", {
   title: "GAUGE free sample record",
-  description: "A free full sample GAUGE record \u2014 shows exactly what a paid response contains: current reading vs official thresholds (band, distance-to-action), seasonal statistical anomaly (percentile/strata), sources + record_hash provenance. Try before you buy.",
+  description: "Preview the exact JSON shape of a paid response \u2014 value, thresholds, 5-year norms, source URL, and Bitcoin-anchored record_hash. Use to inspect output format before paying. Free.",
   inputSchema: {}
 }, async () => {
   try {
@@ -83,7 +83,7 @@ server.registerTool("gauge_sample", {
 });
 server.registerTool("gauge_river_free", {
   title: "Free US river reading",
-  description: "Free raw US river reading (gage height / streamflow) for a USGS site id \u2014 current/previous/change/trend/sources/record_hash. No payment. Example site 07010000 = Mississippi at St. Louis.",
+  description: "Get a live USGS river reading (gage height or streamflow) with Bitcoin-anchored receipt. Returns current value, previous, change, trend, and source URL. Free. Example: entity 07010000 = Mississippi at St. Louis.",
   inputSchema: {
     entity: z.string().describe("USGS site id, e.g. 07010000"),
     signal_id: z.enum(["hydrology.river-level", "hydrology.streamflow"]).optional().describe("default hydrology.river-level")
@@ -95,9 +95,22 @@ server.registerTool("gauge_river_free", {
     return fail(e);
   }
 });
+server.registerTool("gauge_anchor", {
+  title: "Bitcoin anchor proof for a record_hash (free)",
+  description: "Verify any GAUGE receipt against Bitcoin. Returns Merkle proof + OpenTimestamps data proving a record existed at a specific time, independently verifiable without our server. Use to audit past responses. Free.",
+  inputSchema: {
+    hash: z.string().describe("the record_hash from any GAUGE response, e.g. sha256:5969b8a147f438254eda...")
+  }
+}, async ({ hash }) => {
+  try {
+    return ok(await freeGet(`/gauge/anchor?hash=${q(hash)}`));
+  } catch (e) {
+    return fail(e);
+  }
+});
 server.registerTool("verify_signal", {
   title: "Verify one official fact before you act ($0.01)",
-  description: "PRE-EXECUTION CHECK. Verify one official-source fact before your agent commits to an action - a payout, an order, a route, a filing, an alert. Returns the current official reading against the OFFICIAL threshold ladder (band, distance-to-action), a 5-year same-season percentile so you can tell routine from unusual, the source URL, and a record_hash you can recompute offline to prove the answer was not altered. 180+ signals across macro, weather, hazard, shipping, filings, crypto and lifecycle lines - this is the cheapest and most general entry point; the $0.25 *_region tools are the multi-leg audit version of the same thing. Costs $0.01 USDC on Base via x402. Free coverage check first at gauge_catalog. Descriptive only, never a forecast or advice. No data -> not billed.",
+  description: "Check one official fact from 180+ signals before acting (trade, payout, route, alert). $0.01. Returns value, action thresholds, 5-year seasonal norms, source URL, and Bitcoin-anchored receipt. No data found \u2192 no charge. For multi-source cross-validation, use the $0.25 bundle tools instead.",
   inputSchema: {
     signal_id: z.string().describe("what to check, in genus.species form, e.g. hydrology.river-level, macro.unemployment, crypto.spot, earthquake.current_activity - full list free via gauge_catalog"),
     entity: z.string().describe("which object, PAIRED WITH signal_id, e.g. 07010000 for hydrology.river-level, japan for earthquake.current_activity - valid pairs free via gauge_catalog")
@@ -111,7 +124,7 @@ server.registerTool("verify_signal", {
 });
 server.registerTool("gauge_flood_risk", {
   title: "Flood-risk / anomaly record ($0.01)",
-  description: "Hydrology/air/precipitation alias of verify_signal - same endpoint, same $0.01 price; prefer verify_signal for anything else. Verifiable flood-risk / anomaly record for one signal+entity: current vs official USGS/NOAA/EPA/CAMS thresholds (band, distance-to-action) + 5yr seasonal anomaly (percentile/strata) + record_hash. Costs $0.01 USDC on Base via x402. Works for hydrology/air/precip signals.",
+  description: "Check if a hydrology/air/precip reading is abnormal vs official thresholds + 5-year baseline. $0.01. Same endpoint as verify_signal; prefer verify_signal for non-hydrology signals. No data \u2192 no charge.",
   inputSchema: {
     signal_id: z.string().describe("e.g. hydrology.river-level, hydrology.streamflow, airquality.aqi, airquality.pm25, precipitation.daily, precipitation.wetness30d"),
     entity: z.string().describe("USGS site id for rivers, or city id (e.g. us-chicago) for air/precip \u2014 see gauge_catalog")
@@ -125,7 +138,7 @@ server.registerTool("gauge_flood_risk", {
 });
 server.registerTool("gauge_region", {
   title: "Region bundle: air + rain + river ($0.25)",
-  description: "Three-leg region bundle for a US city: air quality + precipitation + nearby river, with cross-line corroboration narrative. Costs $0.25 USDC on Base. loc e.g. us-stlouis, us-chicago (see gauge_preview regions). Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 independent sources for a region: air quality + precipitation + nearest river. $0.25. Flags contradictions between sources. Returns all readings + Bitcoin-anchored receipt. loc e.g. us-stlouis, us-chicago (see gauge_preview). Set x402 maxValue \u2265 $0.25.",
   inputSchema: { loc: z.string().describe("city id, e.g. us-stlouis") }
 }, async ({ loc }) => {
   try {
@@ -136,7 +149,7 @@ server.registerTool("gauge_region", {
 });
 server.registerTool("gauge_crop_drought", {
   title: "Agriculture triangle: crop drought ($0.25)",
-  description: "Agriculture triangle for a grain region: agricultural drought (soil moisture vs official USDM D0\u2013D4) + heat/GDD + crop vegetation health (NOAA satellite VHI) + cross-validation (has drought hit the crop canopy). For ag traders & crop insurers. Costs $0.25 USDC on Base. loc e.g. us-iowa, ar-pampas, ua-ukraine. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for crop drought: soil moisture (USDM D0\u2013D4) + heat/growing-degree-days + satellite crop health (NOAA VHI). $0.25. Flags if sources contradict (e.g. drought declared but canopy green). Bitcoin-anchored receipt. loc e.g. us-iowa, ar-pampas, ua-ukraine. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { loc: z.string().describe("grain region id, e.g. us-iowa, ar-pampas, ua-ukraine") }
 }, async ({ loc }) => {
   try {
@@ -147,7 +160,7 @@ server.registerTool("gauge_crop_drought", {
 });
 server.registerTool("gauge_grid_stress", {
   title: "Power grid triangle: grid stress & energy inflation ($0.25)",
-  description: "Power grid triangle for a grid region: electricity demand pressure (temperature HDD/CDD load proxy) + renewable resource (solar/wind) + energy inflation (US CPI Energy YoY) / natural gas price + cross-validation (high demand \xD7 low renewables = grid squeeze \u2192 energy inflation). For power/energy & macro/inflation traders, utilities. Costs $0.25 USDC on Base. loc e.g. us-ercot, us-caiso, eu-germany. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for power grid stress: demand pressure + renewable output (solar/wind) + energy inflation. $0.25. Flags misleading signals (e.g. high demand but also high renewables). Bitcoin-anchored receipt. loc e.g. us-ercot, us-caiso, eu-germany. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { loc: z.string().describe("grid region id, e.g. us-ercot, us-caiso, eu-germany") }
 }, async ({ loc }) => {
   try {
@@ -158,7 +171,7 @@ server.registerTool("gauge_grid_stress", {
 });
 server.registerTool("gauge_route_disruption", {
   title: "Shipping triangle: route disruption & throughput ($0.25)",
-  description: "Shipping/port triangle for a chokepoint: logistics-flow disruption (WMO sea state + wind vs operational thresholds) + sea-state cause (wave decomposition: local-storm vs distant-swell) + live AIS vessel throughput (waiting vs transiting + congestion) + cross-validation. For shipping lines, commodity/freight traders, ports, marine insurers. Costs $0.25 USDC on Base. loc e.g. malacca, suez-redsea, hormuz, channel. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for shipping route disruption: sea state vs thresholds + wave cause (storm vs swell) + live AIS vessel traffic. $0.25. Bitcoin-anchored receipt for cargo dispute audit. loc e.g. malacca, suez-redsea, hormuz, channel. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { loc: z.string().describe("chokepoint id, e.g. malacca, suez-redsea, hormuz, channel") }
 }, async ({ loc }) => {
   try {
@@ -169,7 +182,7 @@ server.registerTool("gauge_route_disruption", {
 });
 server.registerTool("gauge_filing_check", {
   title: "Regulatory-filing triangle: corporate distress & insider ($0.25)",
-  description: "Regulatory-filing triangle for a company: 8-K material events (item severity \u2014 bankruptcy/default/restatement/delisting = critical) + NT late-filing delinquency (distress leading indicator) + Form 4 insider net open-market buy/sell + cross-validation (do insiders confirm the distress by selling or contradict it by buying). All official SEC EDGAR. For event-driven/activist/short funds, quant funds, credit & distressed analysts. Costs $0.25 USDC on Base. entity = ticker e.g. AMC, CVNA, GME. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 SEC EDGAR sources for corporate distress: 8-K material events (bankruptcy/default/restatement) + late-filing delinquency + insider buy/sell pattern. $0.25. Bitcoin-anchored receipt for regulatory audit trail. entity = ticker e.g. AMC, CVNA, GME. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("ticker from watchlist, e.g. AMC, CVNA, GME, BA (see gauge_preview filing_watchlist)") }
 }, async ({ entity }) => {
   try {
@@ -180,7 +193,7 @@ server.registerTool("gauge_filing_check", {
 });
 server.registerTool("gauge_stablecoin_lifecycle", {
   title: "Stablecoin lifecycle triangle: peg-distress & redemption flight ($0.25)",
-  description: "Verifiable stablecoin lifecycle record for one issuer: peg-distress band (current price vs the $1 anchor \u2014 distance-to-action) + redemption-flight pressure (supply/reserve/outflow dynamics) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where a stablecoin sits in its lifecycle \u2014 not investment advice, no buy/sell framing. Costs $0.25 USDC on Base via x402. entity e.g. terrausd-ust, usdc-circle, usdt. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for stablecoin stress: peg drift from $1 + redemption acceleration + downstream protocol exposure. $0.25. Catches bank-run signals before price moves. Bitcoin-anchored receipt. Not investment advice. entity e.g. terrausd-ust, usdc-circle, usdt. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("stablecoin id, e.g. terrausd-ust, usdc-circle, usdt (see gauge_catalog)") }
 }, async ({ entity }) => {
   try {
@@ -191,7 +204,7 @@ server.registerTool("gauge_stablecoin_lifecycle", {
 });
 server.registerTool("gauge_rwa_lifecycle", {
   title: "Tokenized RWA lifecycle triangle: redemption pressure & exposure cascade ($0.25)",
-  description: "Verifiable tokenized real-world-asset (RWA) issuer lifecycle record: issuer lifecycle band + redemption pressure (NAV vs on-chain supply, outflow) + exposure cascade to downstream holders/protocols + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a tokenized-asset issuer's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.25 USDC on Base via x402. entity e.g. blackrock-buidl, ondo-ousg. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for tokenized RWA health: lifecycle position + redemption pressure (NAV vs supply + outflows) + downstream exposure if it unwinds. $0.25. Bitcoin-anchored receipt. Not investment advice. entity e.g. blackrock-buidl, ondo-ousg. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("RWA issuer id, e.g. blackrock-buidl, ondo-ousg (see gauge_catalog)") }
 }, async ({ entity }) => {
   try {
@@ -202,7 +215,7 @@ server.registerTool("gauge_rwa_lifecycle", {
 });
 server.registerTool("gauge_lrt_lifecycle", {
   title: "Liquid-restaking (LRT) lifecycle triangle: redemption queue & collateral cascade ($0.25)",
-  description: "Verifiable liquid-restaking-token (LRT) lifecycle record: lifecycle band anchored to ETH-NAV (NOT $1) + redemption-queue pressure (withdrawal backlog, discount-to-NAV) + collateral cascade to protocols using the LRT as collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of where an LRT sits in its lifecycle \u2014 not investment advice, no buy/sell framing. Costs $0.25 USDC on Base via x402. entity e.g. etherfi-weeth, renzo-ezeth. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for LRT collateral risk: discount-to-NAV (vs ETH, not $1) + withdrawal queue backlog + contagion map if LRT depegs. $0.25. Bitcoin-anchored receipt. Not investment advice. entity e.g. etherfi-weeth, renzo-ezeth. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("LRT id, e.g. etherfi-weeth, renzo-ezeth (see gauge_catalog)") }
 }, async ({ entity }) => {
   try {
@@ -213,7 +226,7 @@ server.registerTool("gauge_lrt_lifecycle", {
 });
 server.registerTool("gauge_defi_lending", {
   title: "DeFi lending protocol lifecycle triangle: bad-debt stress & contagion ($0.25)",
-  description: "Verifiable DeFi lending-protocol lifecycle record: protocol lifecycle band + bad-debt stress (utilization, insolvency/underwater-position pressure) + contagion cascade to correlated protocols and collateral + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a lending protocol's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.25 USDC on Base via x402. entity = protocol id (see gauge_catalog). Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for DeFi lending stress: utilization + underwater-position pressure + contagion to correlated protocols. $0.25. Bitcoin-anchored receipt. Not investment advice. entity = protocol id (see gauge_catalog). Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("DeFi lending protocol id (see gauge_catalog)") }
 }, async ({ entity }) => {
   try {
@@ -224,7 +237,7 @@ server.registerTool("gauge_defi_lending", {
 });
 server.registerTool("gauge_depin_network", {
   title: "DePIN network lifecycle triangle: reward churn & downstream exposure ($0.25)",
-  description: "Verifiable DePIN (decentralized physical infrastructure) network lifecycle record: network-liveness lifecycle band (active nodes/coverage/throughput) + reward-churn pressure (emissions vs participation, node attrition) + downstream exposure cascade + cross-validation, from official/on-chain sources with record_hash. Screening-grade forensics of a DePIN network's lifecycle position \u2014 not investment advice, no buy/sell framing. Costs $0.25 USDC on Base via x402. entity e.g. helium, render, filecoin. Set your x402 client maxValue to at least $0.25 - the common default of $0.10 rejects this locally, before the request is sent.",
+  description: "Cross-check 3 sources for DePIN network health: network liveness + reward-churn pressure (emissions vs participation) + downstream exposure. $0.25. Bitcoin-anchored receipt. Not investment advice. entity e.g. helium, render, filecoin. Set x402 maxValue \u2265 $0.25.",
   inputSchema: { entity: z.string().describe("DePIN network id, e.g. helium, render, filecoin (see gauge_catalog)") }
 }, async ({ entity }) => {
   try {
@@ -235,7 +248,7 @@ server.registerTool("gauge_depin_network", {
 });
 server.registerTool("gauge_resolution_as_of", {
   title: "Proposer-feed resolution: official fact + evidence + source-agreement confidence ($0.01)",
-  description: "Resolves a prediction-market question to the OFFICIAL FACT for an issuer/form. Returns the official answer (boolean) + a verifiable evidence_url + source_tier + a source-AGREEMENT confidence in [0,1] + _citation. This is the recorded official fact and how strongly official sources agree on it \u2014 it is NOT a prediction of the market outcome, and the confidence is NOT a probability that the market resolves yes. Honest-fails with no charge ({ answer:null, confidence:0, no_charge:true, note }) when the fact is not officially determinable as of the cutoff. Screening-grade, official sources only. Costs $0.01 USDC on Base via x402 (no charge on honest-fail).",
+  description: "Resolve a prediction-market question to the official fact. $0.01. Returns answer, evidence URL, source-agreement confidence, and Bitcoin-anchored receipt for disputed settlements. No charge if the fact is not yet officially determinable. Not a prediction \u2014 recorded official fact only.",
   inputSchema: {
     issuer: z.string().describe("the entity/issuer the question is about (e.g. a ticker or issuer id)"),
     form: z.string().optional().describe("the official form/event type to resolve against (e.g. a filing form), if applicable"),

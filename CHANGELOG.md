@@ -6,6 +6,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [S
 ## [Unreleased]
 - (add upcoming changes here)
 
+## [1.0.4] - 2026-09-01
+### Changed
+- All 18 tool descriptions rewritten to 2-3 sentence agent-friendly format (improved discoverability)
+- README rewritten with per-client install snippets (Claude Desktop, Cursor, Claude Code)
+- Added FAQ, wallet safety guide, and free-vs-paid tool comparison
+
+### Added
+- `exports` field in package.json for ESM compatibility
+- `repository`, `homepage`, `engines` fields in package.json
+- Keywords: stablecoin, defi, depin, rwa, prediction-market
+- `gauge_anchor` free tool (Bitcoin proof lookup, added in prior release)
+- Crypto lifecycle tools: stablecoin, RWA, LRT, DeFi lending, DePIN (added in prior release)
+- `gauge_resolution_as_of` prediction-market resolution tool (added in prior release)
+
 ## [0.1.0] - 2026-07-10
 ### Added
 - Initial MCP server exposing GAUGE signals over stdio.

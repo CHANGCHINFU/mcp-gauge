@@ -1,116 +1,164 @@
-# mcp-gauge — MCP server for GAUGE (verifiable signals, pay-per-call in USDC via x402)
+# mcp-gauge — Verifiable facts for AI agents, pay-per-call via x402
 
 [![MCP server score](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge/badges/score.svg)](https://glama.ai/mcp/servers/CHANGCHINFU/mcp-gauge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-server-blue)](https://modelcontextprotocol.io)
 
-Give any **MCP host** (Claude Desktop, Cursor, MCP-compatible agents) access to **GAUGE**'s verifiable, screening-level signals across many domains (weather, drought, agriculture, power grid, shipping, regulatory filings, and more) — and let the agent **pay per call in USDC on Base via [x402](https://x402.org)** (EIP-3009 gasless, **no API key, no signup**).
+**Check official facts before your AI agent acts.** 180+ signals from USGS, NOAA, SEC EDGAR, EPA, and more — each response includes multi-source cross-validation and a tamper-proof receipt anchored to Bitcoin via OpenTimestamps. No API key, no signup. Pay per call in USDC on Base via [x402](https://x402.org).
 
-**Pure description** — official-source facts (USGS / NOAA / EPA / CAMS / ERA5 / FRED / Open-Meteo Marine / SEC EDGAR) + back-testable statistics + `record_hash`, with daily Merkle roots stamped via OpenTimestamps to Bitcoin — the stamp proves the record set existed **no later than** its `stamped_at`; it is **not** evidence about the data day itself. The agent decides. Payment settles **directly to the provider wallet**.
-
-Backed by the GAUGE service at **https://api.truthbear.co**.
-(The service also still answers on its previous host `https://aeml-x402.zeabur.app`; `api.truthbear.co` is the canonical URL and is what every 402 challenge advertises as the resource.)
-
-> **Part of Truth Bear 🐻** — GAUGE is the data engine behind [Truth Bear](https://gauge-frontdesk.zeabur.app), the natural-language front desk for AI agents and SMBs. Ask in plain language, get the official fact + its source + a verifiable `record_hash` — no prediction, no advice, the rest is your call. *An analyst, not a commander.* Front desk: **https://gauge-frontdesk.zeabur.app** · discovery: `/.well-known/x402`, `/llms.txt`.
-
-## Why MCP + x402
-
-- **Discovery** is free and open (MCP): any MCP host lists these tools with zero setup.
-- **Payment** is crypto (x402): the agent pays USDC only when it calls a *paid* tool.
-- Free tools (`gauge_catalog`, `gauge_preview`, `gauge_sample`, `gauge_river_free`) need **no wallet** — try before you buy.
-
-## Tools
-
-| Tool | Price | What |
-|---|---|---|
-| `gauge_catalog` | free | All signals + queryable entities |
-| `gauge_preview` | free | Coverage, pricing menu, bundle lists |
-| `gauge_sample` | free | A full sample record (what paid looks like) |
-| `gauge_river_free` | free | Raw US river reading (USGS site id) |
-| `verify_signal` | **$0.01** | **Start here.** Verify one official fact before your agent acts - reading vs the official threshold ladder + 5yr percentile + source URL + offline-recomputable record_hash. 180+ signals. |
-| `gauge_flood_risk` | **$0.01** | Hydrology/air/precip alias of `verify_signal` - same endpoint, same price |
-| `gauge_region` | **$0.25** | City bundle: air + precipitation + river + cross-check |
-| `gauge_crop_drought` | **$0.25** | Agriculture triangle: drought (USDM) + heat/GDD + crop VHI |
-| `gauge_grid_stress` | **$0.25** | Power grid triangle: demand + renewables + energy inflation |
-| `gauge_route_disruption` | **$0.25** | Shipping triangle: route disruption + sea state + AIS throughput |
-| `gauge_filing_check` | **$0.25** | Regulatory-filing triangle: 8-K + late filing + Form 4 insider |
-| `gauge_stablecoin_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
-| `gauge_rwa_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
-| `gauge_lrt_lifecycle` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
-| `gauge_defi_lending` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
-| `gauge_depin_network` | **$0.25** | see the tool description (regenerated from the live 402 quote) |
-| `gauge_resolution_as_of` | **$0.01** | see the tool description (regenerated from the live 402 quote) |
-
-Every figure above is regenerated from the live 402 quote. **The 402 challenge the endpoint returns is always authoritative.** If you drive the API with your own x402 client rather than this server, set its `maxValue` to at least **$0.25** — the common default of $0.10 makes your client reject the bundle tools locally, before the request is ever sent. `gauge_preview` returns the current menu for free.
-
-**130+ signals (and growing)** across hydrology, air quality, precipitation, agriculture, power grid, shipping and regulatory filing — with **global coverage** (US plus Argentina, Brazil, China, India, Ukraine, EU and more). Check the live set anytime via the free `gauge_catalog` tool.
-
-## Install & configure
-
-Requires Node 18+. The MCP host runs the server over **stdio**. Install straight from GitHub — **no npm account, no signup** (the built `dist/` is committed):
-
-```bash
-npx -y github:CHANGCHINFU/mcp-gauge
-```
+## Quick start
 
 ### Claude Desktop
 
-Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`):
+Add to your config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
 
-```json
+```jsonc
 {
   "mcpServers": {
     "gauge": {
       "command": "npx",
-      "args": ["-y", "github:CHANGCHINFU/mcp-gauge"],
+      "args": ["-y", "mcp-gauge-x402"],
       "env": {
-        "EVM_PRIVATE_KEY": "0xYOUR_BASE_WALLET_KEY_WITH_A_LITTLE_USDC"
+        "EVM_PRIVATE_KEY": "0x..."   // optional — omit for free tools only
       }
     }
   }
 }
 ```
 
-Omit `EVM_PRIVATE_KEY` to use **free tools only** (catalog / preview / sample / river).
+### Cursor
 
-### Cursor / other MCP hosts / Claude Code
+Add to `.cursor/mcp.json` in your project root (or global config):
 
-- **Claude Code**: `claude mcp add gauge -- npx -y github:CHANGCHINFU/mcp-gauge` (add `--env EVM_PRIVATE_KEY=0x…` for paid tools).
-- **Cursor / others**: command `npx -y github:CHANGCHINFU/mcp-gauge`, transport stdio, optional `EVM_PRIVATE_KEY` env.
+```jsonc
+{
+  "mcpServers": {
+    "gauge": {
+      "command": "npx",
+      "args": ["-y", "mcp-gauge-x402"],
+      "env": {
+        "EVM_PRIVATE_KEY": "0x..."   // optional — omit for free tools only
+      }
+    }
+  }
+}
+```
+
+### Claude Code
+
+```bash
+claude mcp add gauge -- npx -y mcp-gauge-x402
+# For paid tools, add the env:
+claude mcp add gauge --env EVM_PRIVATE_KEY=0x... -- npx -y mcp-gauge-x402
+```
+
+### Other MCP hosts
+
+Any MCP client that supports stdio transport works. Command: `npx -y mcp-gauge-x402`, set `EVM_PRIVATE_KEY` in env for paid tools.
+
+> **Alternative: install from GitHub** (no npm account needed):
+> ```
+> npx -y github:CHANGCHINFU/mcp-gauge
+> ```
 
 ### From source
 
 ```bash
 git clone https://github.com/CHANGCHINFU/mcp-gauge && cd mcp-gauge
 npm install && npm run build
-node dist/index.js        # stdio
+node dist/index.js
 ```
 
-> Once published to npm the package name is `mcp-gauge-x402` (`npx -y mcp-gauge-x402`); until then use the GitHub form above.
+## Payment setup
 
-## Config (env)
+| | Without `EVM_PRIVATE_KEY` | With `EVM_PRIVATE_KEY` |
+|---|---|---|
+| Free tools | Yes | Yes |
+| Paid tools | No (tools visible but calls fail) | Yes (auto-pays via x402) |
+
+**How it works:** When your agent calls a paid tool, the GAUGE server returns an x402 payment challenge. The MCP client automatically pays in USDC on Base (EIP-3009 gasless — no ETH needed) and retries the request. The receipt is included in every response.
+
+**Wallet safety:**
+- Use a **dedicated burner wallet** with a small USDC balance — never your main wallet
+- The private key never leaves your machine (processed locally by `x402-fetch`)
+- Fund with just enough USDC for your expected usage
+- Network: **Base mainnet** (Coinbase L2)
+
+## Tools
+
+### Free (no wallet needed)
+
+| Tool | What it does |
+|---|---|
+| `gauge_catalog` | Browse 180+ available signals |
+| `gauge_preview` | Coverage, pricing menu, bundle contents |
+| `gauge_sample` | Full sample record with Bitcoin receipt |
+| `gauge_river_free` | US river gauge reading (USGS) with receipt |
+| `gauge_anchor` | Look up Bitcoin proof for any `record_hash` |
+
+### Paid — single-source verification
+
+| Tool | What it does |
+|---|---|
+| `verify_signal` | Check one official fact from 180+ signals. Bitcoin-anchored receipt. |
+| `gauge_flood_risk` | Hydrology / air / precipitation alias of `verify_signal` |
+| `gauge_resolution_as_of` | Prediction-market settlement — official fact + evidence + receipt |
+
+### Paid — 3-source cross-validation bundles
+
+| Tool | What it cross-checks |
+|---|---|
+| `gauge_region` | Air quality + precipitation + river level |
+| `gauge_crop_drought` | Drought severity + heat/GDD + satellite crop health |
+| `gauge_grid_stress` | Demand pressure + renewable output + energy inflation |
+| `gauge_route_disruption` | Sea state + wave cause + live AIS vessel traffic |
+| `gauge_filing_check` | SEC 8-K events + late filing + insider buy/sell |
+| `gauge_stablecoin_lifecycle` | Peg drift + redemption acceleration + protocol exposure |
+| `gauge_rwa_lifecycle` | Issuer lifecycle + redemption pressure + downstream exposure |
+| `gauge_lrt_lifecycle` | Discount-to-NAV + withdrawal queue + collateral cascade |
+| `gauge_defi_lending` | Utilization + bad-debt pressure + contagion |
+| `gauge_depin_network` | Network liveness + reward churn + downstream exposure |
+
+Prices are set by the live x402 challenge (use `gauge_preview` to check current pricing). If you drive the API with your own x402 client, set `maxValue` to at least **$0.25** — the default $0.10 makes your client reject bundle tools locally.
+
+## Environment variables
 
 | Key | Required | Description |
 |---|---|---|
-| `EVM_PRIVATE_KEY` | for **paid** tools | 0x Base-mainnet wallet key; needs a little USDC (EIP-3009 gasless, no ETH). |
-| `GAUGE_BASE_URL` | no | Default `https://api.truthbear.co`. |
-| `GAUGE_MAX_USDC` | no | Atomic per-call cap. Default `120000` ($0.12). |
+| `EVM_PRIVATE_KEY` | For paid tools | Base-mainnet wallet private key (0x...). Needs USDC, no ETH. |
+| `GAUGE_BASE_URL` | No | API endpoint. Default: `https://api.truthbear.co` |
+| `GAUGE_MAX_USDC` | No | Atomic per-call cap in USDC (6 decimals). Default: `350000` |
 
-> Handle the private key like any hot-wallet secret; fund it with a small USDC balance only.
+## Zero-trust verification
 
-## Verify (zero-trust)
+Every paid record carries a `record_hash` (canonical SHA-256). Daily Merkle roots are stamped to Bitcoin via OpenTimestamps. The stamp proves the record set existed no later than `stamped_at`. Re-check anytime:
+- `gauge_anchor` tool (free)
+- `POST /verify` or `/proof/:record_hash` at the GAUGE API
+- Download attestation bytes and verify with the official `ots` CLI
 
-Every paid record carries `record_hash` (canonical sha256). Daily Merkle roots are stamped via OpenTimestamps to Bitcoin: **the stamp proves the record set existed no later than its `stamped_at` — it is NOT evidence about the data day itself.** Re-check via `POST /verify` or `/proof/:record_hash` at the GAUGE service; see `/gauge/anchor` for the day roots and attestation bytes (verify them with the official `ots` tool).
+## FAQ
 
-## Distribution (maintainers)
+**Do I need ETH for gas?**
+No. x402 uses EIP-3009 (gasless USDC transfer). You only need USDC on Base.
 
-- **GitHub install** (primary, no npm account): users run `npx -y github:CHANGCHINFU/mcp-gauge`.
-- **awesome-mcp-servers**: submit a PR to a curated MCP server list for discoverability (no npm needed).
-- **MCP Registry** (optional, needs npm): publish `mcp-gauge-x402` to npm, then `server.json` is ready for the [MCP publisher](https://github.com/modelcontextprotocol/registry):
-  ```bash
-  npm publish
-  mcp-publisher login github
-  mcp-publisher publish
-  ```
+**What if I don't set a private key?**
+You can still use all 5 free tools. Paid tools will be listed but return an error when called.
+
+**Is my private key sent to the server?**
+No. The key stays on your machine. `x402-fetch` signs the payment locally and sends only the signed authorization to the GAUGE server.
+
+**What happens if the data isn't available?**
+The tool honest-fails with no charge. You only pay when you get a result.
+
+**Can I verify the receipt without your server?**
+Yes. Download the OpenTimestamps attestation via `gauge_anchor` and verify with the standard `ots` CLI tool against any Bitcoin node.
+
+## Links
+
+- Website: [truthbear.co](https://truthbear.co)
+- Front desk: [gauge-frontdesk.zeabur.app](https://gauge-frontdesk.zeabur.app)
+- API discovery: `https://api.truthbear.co/.well-known/x402`, `/llms.txt`
+- Smithery: [smithery.ai/servers/a98741263/mcp-gauge](https://smithery.ai/servers/a98741263/mcp-gauge)
+- GitHub: [CHANGCHINFU/mcp-gauge](https://github.com/CHANGCHINFU/mcp-gauge)
 
 MIT · AEML-DS Vanished-Data Exchange
