@@ -2,7 +2,14 @@ startCommand:
   type: stdio
   configSchema:
     type: object
-    properties: {}
+    properties:
+      EVM_PRIVATE_KEY:
+        type: string
+        description: "Base-mainnet wallet private key (0x...) for paid tools. Omit for free tools only. Use a dedicated burner wallet."
     required: []
   commandFunction: |
-    (config) => ({ command: 'npx', args: ['-y', 'github:CHANGCHINFU/mcp-gauge'] })
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'mcp-gauge-x402'],
+      env: config.EVM_PRIVATE_KEY ? { EVM_PRIVATE_KEY: config.EVM_PRIVATE_KEY } : {}
+    })
