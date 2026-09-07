@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-server-blue)](https://modelcontextprotocol.io)
 
-**Check official facts before your AI agent acts.** 180+ signals from USGS, NOAA, SEC EDGAR, EPA, and more — each response includes multi-source cross-validation and a tamper-proof receipt anchored to Bitcoin via OpenTimestamps. No API key, no signup. Pay per call in USDC on Base via [x402](https://x402.org).
+**Check official facts before your AI agent acts.** 180+ signals from USGS, NOAA, SEC EDGAR, EPA, and more — each response includes multi-source cross-validation and a tamper-proof receipt anchored to Bitcoin via OpenTimestamps (proving the record set existed no later than the stamp time, not that it was collected on the data day). No API key, no signup. Pay per call in USDC on Base via [x402](https://x402.org).
 
 ## Quick start
 
@@ -100,7 +100,7 @@ node dist/index.js
 
 | Tool | What it does |
 |---|---|
-| `verify_signal` | Check one official fact from 180+ signals. Bitcoin-anchored receipt. |
+| `verify_signal` | Check one official fact from 180+ signals. Bitcoin-anchored receipt (proves it existed no later than the stamp time). |
 | `gauge_flood_risk` | Hydrology / air / precipitation alias of `verify_signal` |
 | `gauge_resolution_as_of` | Prediction-market settlement — official fact + evidence + receipt |
 
@@ -151,7 +151,7 @@ No. The key stays on your machine. `x402-fetch` signs the payment locally and se
 The tool honest-fails with no charge. You only pay when you get a result.
 
 **Can I verify the receipt without your server?**
-Yes. Download the OpenTimestamps attestation via `gauge_anchor` and verify with the standard `ots` CLI tool against any Bitcoin node.
+Yes. Download the OpenTimestamps attestation via `gauge_anchor` and verify with the standard `ots` CLI tool against any Bitcoin node — it proves the record set existed no later than the stamp time, not that it was collected on the data day.
 
 ## Links
 
